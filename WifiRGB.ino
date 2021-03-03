@@ -29,6 +29,7 @@ IPAddress subnet(255, 255, 255, 0);
 
 // NeoPixel brightness, 0 (min) to 255 (max)
 #define BRIGHTNESS 255  //(max = 255)
+RGB current_color = {255,255,255};
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -49,6 +50,7 @@ int alarmHours;
 bool alarmSet = false;
 double wakeUpTime = 900.0; //in seconds
 
+
 //Time settings
 int seconds0;
 const long utcOffsetInSeconds = 3600;
@@ -62,7 +64,7 @@ void setup(void) {
   // WiFiManager
   // Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
-
+  
   //wifiManager.setAPConfig(ip, gateway, subnet);
   wifiManager.autoConnect("RGB_Lamp_AP");
   Serial.println("Connected.");
@@ -109,6 +111,14 @@ void loop(void) {
     checkAlarm();
     seconds0 = millis();
     }
+}
+
+//Callback for WifiManager
+void configModeCallback (WiFiManager *myWiFiManager) {
+  Serial.println("Entered config mode");
+  Serial.println(WiFi.softAPIP());
+
+  Serial.println(myWiFiManager->getConfigPortalSSID());
 }
 
 void handleRoot() {
@@ -173,7 +183,7 @@ void growLight(){
     brightness = brightness + step;
     Serial.print("Brightness: ");
     Serial.println(brightness);
-    strip.fill(strip.Color(252, 241, 114)); //Set LEDs to white
+    strip.fill(strip.Color(current_color.r, current_color.g, current_color.b)); //Set LEDs to color that was selected last
     strip.setBrightness(int(brightness));
     strip.show();
     delay(1000);
@@ -246,11 +256,11 @@ void handleApiRequest() {
 
   // TODO: support different modes
   const char* jsonrgbmode = root["mode"]; // "SOLID"
-
+  
+  current_color = rgb;
   strip.fill(strip.Color(rgb.r,   rgb.g,   rgb.b)); //Set LEDs to white
   strip.setBrightness(brightness);
   strip.show();           
-
   server.send(200, "application/json", server.arg("plain"));
 }
 

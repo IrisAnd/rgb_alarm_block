@@ -93,14 +93,10 @@ const char WEBINTERFACE[] PROGMEM = R"=====(
       borderColor: "#313131"
     });
 
-    demoColorPicker.on("color:change", function(color, changes) {
+    demoColorPicker.on("input:change", function(color, changes) {
       // Log the color's hex RGB value to the dev console
       console.log(color.rgb);
       console.log(color.hsv.v);
-      // If the "H" channel has changed, log the color's HSV value too
-      //if (changes.h) {
-      //  console.log(color.hsv);
-      //}
       var json = {state:"ON",brightness:color.hsv.v,color:{mode:"rgb",r:color.rgb.r,g:color.rgb.g,b:color.rgb.b},mode:"SOLID"};
       console.log(json);
       console.log(JSON.stringify(json));
