@@ -70,6 +70,23 @@ const char WEBINTERFACE[] PROGMEM = R"=====(
         cursor: pointer;
         margin-bottom: 6%;
       }
+
+       #alarm-color {
+        background-color: #C4C4C4;
+        border: 1px;
+        color: black;
+        font-size: 20px;
+        width: 35%;
+        font-weight: bold;
+        font-family: "verdana";
+        border-radius: 20px;
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        cursor: pointer;
+        margin-bottom: 6%;
+      }
     </style>
 </head>
 <body>
@@ -121,9 +138,13 @@ const char WEBINTERFACE[] PROGMEM = R"=====(
   <input type="submit" id="submit" value="Submit">
   </form>
   <br>
+  <form action="/alarm-color" method="POST">
+  <input type="submit" id="alarm-color" value="Set Alarm Color">
+  </form>
   <form action="/reset" method="POST">
   <input type="submit" id="reset" value="Reset">
   </form>
+ 
   
 </body>
 </html>
