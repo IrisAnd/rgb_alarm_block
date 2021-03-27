@@ -21,6 +21,10 @@ IPAddress subnet(255, 255, 255, 0);
 
 #define BUILTIN_LED 2 // internal ESP-12 LED on GPIO2
 
+//Settings for capacity switch
+#define AIN A0
+int inputVal=0;
+
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1:
 #define LED_PIN     D6
@@ -30,7 +34,10 @@ IPAddress subnet(255, 255, 255, 0);
 
 // NeoPixel brightness, 0 (min) to 255 (max)
 #define BRIGHTNESS 255  //(max = 255)
+
 RGB current_color = {255,255,255};
+int current_brightness = BRIGHTNESS;
+bool stripOff = false;
 RGB alarm_color = {255,255,255};
 
 // Declare our NeoPixel strip object:
@@ -52,9 +59,9 @@ int alarmHours;
 bool alarmSet = false;
 double wakeUpTime = 900.0; //in seconds
 
-
 //Time settings
 int seconds0;
+int seconds1;
 const long utcOffsetInSeconds = 3600;
 
 //EEPROM Storage Settings
@@ -137,6 +144,26 @@ void loop(void) {
     checkAlarm();
     seconds0 = millis();
     }
+  else if ((millis() - seconds1) > 1000) {
+    //Check if switch was touched and turn off LEDs
+    inputVal=analogRead(AIN);
+    if(inputVal>=20)
+    {if (stripOff == true){
+        Serial.println("Turning on LEDs");
+        strip.fill(strip.Color(current_color.r, current_color.g, current_color.b));
+        strip.setBrightness(current_brightness);
+        strip.show();
+        stripOff = false;
+      }
+      else{
+        Serial.println("Turning off LEDs");
+        strip.clear();
+        strip.show();
+        stripOff = true;
+      }
+    }
+    seconds1 = millis();
+    }
 }
 
 //Callback for WifiManager
@@ -168,6 +195,8 @@ void handleNotFound() {
 
 void resetAlarm() {
   alarmSet = false;
+  EEPROM.write(alarm_set_mem, alarmSet);
+  EEPROM.commit();
   Serial.print("Reset");
   ///String s = "<a href='/ui'> Alarm was reset. Go Back </a>";
   server.send(200, "text/html", GO_BACK); //Send web page
@@ -299,6 +328,7 @@ void handleApiRequest() {
   const char* jsonrgbmode = root["mode"]; // "SOLID"
   
   current_color = rgb;
+  current_brightness = brightness;
   strip.fill(strip.Color(rgb.r,   rgb.g,   rgb.b)); //Set LEDs to white
   strip.setBrightness(brightness);
   strip.show();           
