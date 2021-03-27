@@ -75,8 +75,7 @@ void setup(void) {
   // Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
   
-  //wifiManager.setAPConfig(ip, gateway, subnet);
-  wifiManager.setSTAStaticIPConfig(ip, gateway, subnet); // optional DNS 4th argument
+  //wifiManager.setSTAStaticIPConfig(ip, gateway, subnet); // optional DNS 4th argument
   wifiManager.autoConnect("RGB_Lamp_AP");
   Serial.println("Connected.");
   
@@ -114,6 +113,9 @@ void setup(void) {
   alarmHours = EEPROM.read(alarm_hour_mem);
   alarmMinutes = EEPROM.read(alarm_min_mem);
   alarmSet = EEPROM.read(alarm_set_mem);
+  Serial.println(alarmHours);
+  Serial.println(alarmMinutes);
+  Serial.println(alarmSet);
   int alarmColorR =  EEPROM.read(alarm_r_val_mem);
   int alarmColorG =  EEPROM.read(alarm_g_val_mem);
   int alarmColorB =  EEPROM.read(alarm_b_val_mem);
@@ -177,7 +179,7 @@ void setAlarmColor(){
   EEPROM.write(alarm_g_val_mem, alarm_color.g);
   EEPROM.write(alarm_b_val_mem, alarm_color.b);
   EEPROM.commit();
-  Serial.print("Alarm Color Set");
+  Serial.println("Alarm Color Set");
   ///String s = "<a href='/ui'> Alarm was reset. Go Back </a>";
   server.send(200, "text/html", GO_BACK); //Send web page
 }
@@ -186,7 +188,6 @@ void handleTime() {
   //int alarmMinutes;
   //int alarmHours;
   alarmSet = true;
-  EEPROM.write(alarm_set_mem, alarmSet);
   Serial.println(server.arg("alarm"));
   String input = server.arg("alarm");
   for (int i = 0; i < input.length(); i++) {
@@ -200,6 +201,7 @@ void handleTime() {
   Serial.println(alarmMinutes);
   EEPROM.write(alarm_hour_mem, alarmHours);
   EEPROM.write(alarm_min_mem, alarmMinutes);
+  EEPROM.write(alarm_set_mem, alarmSet);
   EEPROM.commit();
   //String s = "<a href='/ui'> Alarm was set to . Go Back </a>";
   server.send(200, "text/html", GO_BACK); //Send web page
