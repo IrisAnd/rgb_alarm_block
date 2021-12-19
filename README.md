@@ -5,11 +5,14 @@ More information can be found here: http://totechbase.com/projects/printer/wake-
 
 ## Required Arduino Libraries
 Arduino Json (Version 5.5)
+
 NTPClient
+
 Wifimanager (by tzapu)
 ...
 
 ## Coming Features
 Static IP Address or Hostname for Webserver
+
 Button to switch off/on lights manually
 
