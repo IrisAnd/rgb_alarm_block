@@ -7,7 +7,6 @@
 #include <EEPROM.h>
 #include <WiFiManager.h>
 #include <NTPClient.h>
-#include <EEPROM.h>
 
 #include "names.h"
 #include "web_admin.h"
@@ -15,15 +14,11 @@
 #include "web_iro_js.h"
 #include "go_back.h"
 
-IPAddress ip(192, 168, 2, 208);
+IPAddress ip(192, 168, 2, 1);
 IPAddress gateway(192, 168, 2, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 #define BUILTIN_LED 2 // internal ESP-12 LED on GPIO2
-
-//Settings for capacity switch
-#define AIN A0
-int inputVal=0;
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1:
@@ -34,11 +29,7 @@ int inputVal=0;
 
 // NeoPixel brightness, 0 (min) to 255 (max)
 #define BRIGHTNESS 255  //(max = 255)
-
 RGB current_color = {255,255,255};
-int current_brightness = BRIGHTNESS;
-bool stripOff = false;
-RGB alarm_color = {255,255,255};
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -59,18 +50,10 @@ int alarmHours;
 bool alarmSet = false;
 double wakeUpTime = 900.0; //in seconds
 
+
 //Time settings
 int seconds0;
-int seconds1;
 const long utcOffsetInSeconds = 3600;
-
-//EEPROM Storage Settings
-int alarm_hour_mem = 17;
-int alarm_min_mem = 23;
-int alarm_set_mem = 0;
-int alarm_r_val_mem = 56;
-int alarm_g_val_mem = 86;
-int alarm_b_val_mem = 74;
 
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
@@ -82,7 +65,7 @@ void setup(void) {
   // Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
   
-  //wifiManager.setSTAStaticIPConfig(ip, gateway, subnet); // optional DNS 4th argument
+  //wifiManager.setAPConfig(ip, gateway, subnet);
   wifiManager.autoConnect("RGB_Lamp_AP");
   Serial.println("Connected.");
   
@@ -107,28 +90,12 @@ void setup(void) {
   server.on("/api/v1/state", HTTP_POST, handleApiRequest);
   
   server.on("/reset", HTTP_POST, resetAlarm);
-  server.on("/alarm-color", HTTP_POST, setAlarmColor);
   server.on("/time", HTTP_POST, handleTime); //form action is handled here
  
 
   server.begin();
   Serial.println("WifiRGB HTTP server started");
 
-  //Read alarm settings from memory
-  EEPROM.begin(512);
-  Serial.println("Reading Memory");
-  alarmHours = EEPROM.read(alarm_hour_mem);
-  alarmMinutes = EEPROM.read(alarm_min_mem);
-  alarmSet = EEPROM.read(alarm_set_mem);
-  Serial.println(alarmHours);
-  Serial.println(alarmMinutes);
-  Serial.println(alarmSet);
-  int alarmColorR =  EEPROM.read(alarm_r_val_mem);
-  int alarmColorG =  EEPROM.read(alarm_g_val_mem);
-  int alarmColorB =  EEPROM.read(alarm_b_val_mem);
-  alarm_color = {alarmColorR,   alarmColorG,   alarmColorB};
-
-  
   //Initialize LED strip
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.fill(strip.Color(255,   255,   255)); //Set LEDs to white
@@ -143,26 +110,6 @@ void loop(void) {
   if ((millis() - seconds0) > 30000) {
     checkAlarm();
     seconds0 = millis();
-    }
-  else if ((millis() - seconds1) > 1000) {
-    //Check if switch was touched and turn off LEDs
-    inputVal=analogRead(AIN);
-    if(inputVal>=20)
-    {if (stripOff == true){
-        Serial.println("Turning on LEDs");
-        strip.fill(strip.Color(current_color.r, current_color.g, current_color.b));
-        strip.setBrightness(current_brightness);
-        strip.show();
-        stripOff = false;
-      }
-      else{
-        Serial.println("Turning off LEDs");
-        strip.clear();
-        strip.show();
-        stripOff = true;
-      }
-    }
-    seconds1 = millis();
     }
 }
 
@@ -195,20 +142,7 @@ void handleNotFound() {
 
 void resetAlarm() {
   alarmSet = false;
-  EEPROM.write(alarm_set_mem, alarmSet);
-  EEPROM.commit();
   Serial.print("Reset");
-  ///String s = "<a href='/ui'> Alarm was reset. Go Back </a>";
-  server.send(200, "text/html", GO_BACK); //Send web page
-}
-
-void setAlarmColor(){
-  alarm_color = current_color;
-  EEPROM.write(alarm_r_val_mem, alarm_color.r);
-  EEPROM.write(alarm_g_val_mem, alarm_color.g);
-  EEPROM.write(alarm_b_val_mem, alarm_color.b);
-  EEPROM.commit();
-  Serial.println("Alarm Color Set");
   ///String s = "<a href='/ui'> Alarm was reset. Go Back </a>";
   server.send(200, "text/html", GO_BACK); //Send web page
 }
@@ -228,10 +162,6 @@ void handleTime() {
 }
   Serial.println(alarmHours);
   Serial.println(alarmMinutes);
-  EEPROM.write(alarm_hour_mem, alarmHours);
-  EEPROM.write(alarm_min_mem, alarmMinutes);
-  EEPROM.write(alarm_set_mem, alarmSet);
-  EEPROM.commit();
   //String s = "<a href='/ui'> Alarm was set to . Go Back </a>";
   server.send(200, "text/html", GO_BACK); //Send web page
 }
@@ -253,7 +183,7 @@ void growLight(){
     brightness = brightness + step;
     Serial.print("Brightness: ");
     Serial.println(brightness);
-    strip.fill(strip.Color(alarm_color.r, alarm_color.g, alarm_color.b)); //Set LEDs to color that was set as alarm color
+    strip.fill(strip.Color(current_color.r, current_color.g, current_color.b)); //Set LEDs to color that was selected last
     strip.setBrightness(int(brightness));
     strip.show();
     delay(1000);
@@ -328,7 +258,6 @@ void handleApiRequest() {
   const char* jsonrgbmode = root["mode"]; // "SOLID"
   
   current_color = rgb;
-  current_brightness = brightness;
   strip.fill(strip.Color(rgb.r,   rgb.g,   rgb.b)); //Set LEDs to white
   strip.setBrightness(brightness);
   strip.show();           
